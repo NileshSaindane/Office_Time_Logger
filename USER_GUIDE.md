@@ -2,7 +2,7 @@
 
 ## What is this app?
 
-Office Time Logger is a **browser-based time tracking app** that runs entirely on your device — no account, no server, no internet required after the first load. It records when you clock in and out each day, tracks your 6.5-hour daily goal, and lets you export your attendance as an Excel file.
+Office Time Logger is a **browser-based time tracking app** that runs entirely on your device — no account, no server, no internet required after the first load. It records when you clock in and out each day, tracks your 6.5-hour daily goal, and lets you export and import your attendance as an Excel file.
 
 ---
 
@@ -118,6 +118,15 @@ Tap your **name / avatar chip** in the top-right corner of any screen.
 - Type your name and tap **Save**.
 - Your initial and name in the header update immediately.
 
+### Import from Excel
+
+Tap **Import Excel** (available in the Today tab's Recent Days card, or in the History tab header).
+
+- A file picker opens — select a previously exported `Office_Attendance.xlsx` file.
+- The app reads all entries from the Excel file and **merges** them with any data already in the app (no duplicates).
+- Works on **all devices** — Android, iPhone, and desktop.
+- Use this to restore data when switching devices or browsers, or to load a shared Excel file someone else exported.
+
 ### Export to Excel
 
 Tap **Export Excel** (available in the Today tab's Recent Days card, or in any month header in the History tab).
@@ -126,21 +135,40 @@ Tap **Export Excel** (available in the Today tab's Recent Days card, or in any m
 - The file has **one sheet per month**, each containing: Sr. No., Date, In Time, Out Time, Total Hours, 6.5 Hours Done?, and a summary section at the bottom.
 - Re-export at any time to get the latest data.
 
-### Auto-Save Excel (Chrome / Edge on Windows)
+### Auto-Save Excel (Chrome / Edge on Desktop & Android)
 
-If your browser supports the **File System Access API** (Chrome or Edge on desktop), an **Auto-Save** button appears next to Export Excel.
+If your browser supports the **File System Access API** (Chrome or Edge on desktop or Android), an **Auto-Save** button appears next to Export Excel.
 
 - Tap **Auto-Save** and choose where to save the file (e.g., your OneDrive or Desktop).
 - From that point on, the Excel file is **automatically overwritten every time you clock in or out** — you always have an up-to-date file without manually clicking export.
 - The button turns green (**Auto-Save ON**) to confirm it is active.
+- **Not available on iPhone/iPad Safari** — use Import + Export manually instead.
+
+---
+
+## Excel as Your Database — Platform Comparison
+
+You can use an Excel file as the persistent record for your data across sessions and devices:
+
+| Step | iPhone (Safari) | Android (Chrome) | Desktop (Chrome/Edge) |
+|---|---|---|---|
+| Import existing Excel | ✅ | ✅ | ✅ |
+| Clock in/out saves locally | ✅ | ✅ | ✅ |
+| Auto-write to same Excel | ❌ | ✅ | ✅ |
+| Manual Export Excel | ✅ | ✅ | ✅ |
+
+**iOS workflow:** Import Excel → use app → Export Excel when done → next time, Import that file again to continue where you left off.
+
+**Android / Desktop workflow:** Import Excel once → set up Auto-Save → the file stays in sync automatically on every clock event.
 
 ---
 
 ## Data Storage
 
-- All time entries are stored in your browser's **local storage** under the key `office_time_logger_v1`.
+- All time entries are stored in your browser's **local storage** on this device.
 - Data is **never sent anywhere** — it stays entirely on your device.
-- Clearing your browser's site data or switching browsers will lose the data. Use **Export Excel** regularly as a backup.
+- Clearing your browser's site data or switching browsers will lose the data.
+- Use **Export Excel** regularly as a backup, and **Import Excel** to restore on a new device or browser.
 
 ---
 
@@ -150,3 +178,4 @@ If your browser supports the **File System Access API** (Chrome or Edge on deskt
 - The **progress ring** fills blue as you work toward 6.5 hours, then switches to green once the goal is reached.
 - The **Recent Days** table uses colour coding: green = goal met, amber = close (over 5.5h), red = below target.
 - The app works **offline** after the first visit thanks to the service worker (`sw.js`).
+- Tap the **?** button (top-right corner, next to your name) at any time to view the built-in help guide inside the app.

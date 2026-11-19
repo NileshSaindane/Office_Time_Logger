@@ -544,6 +544,8 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
         <div style="display:flex;gap:6px">
           <button class="export-btn" id="autosave-btn" onclick="setupAutoSave()" style="display:none">Auto-Save</button>
           <button class="export-btn" onclick="exportAllExcel()" id="export-all-btn">Export Excel</button>
+          <button class="export-btn" onclick="triggerExcelImport()" id="import-btn">Import Excel</button>
+          <input type="file" id="excel-import-input" accept=".xlsx" style="display:none" onchange="handleExcelImport(this)">
         </div>
       </div>
       <div id="recent-days"><div class="log-empty">No history yet</div></div>
@@ -555,7 +557,10 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
   <div class="tab-panel" id="tab-history">
     <div class="section-header" style="margin-top:4px">
       <h2>Log History</h2>
-      <button class="export-btn" onclick="openManualEntry()">+ Add Entry</button>
+      <div style="display:flex;gap:8px">
+        <button class="export-btn" onclick="triggerExcelImport()">Import Excel</button>
+        <button class="export-btn" onclick="openManualEntry()">+ Add Entry</button>
+      </div>
     </div>
     <div class="info-card">
       <span class="info-icon">&#128274;</span>
@@ -739,14 +744,31 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
         <div class="help-row-body"><strong>Export Excel</strong>Tap <em>Export Excel</em> to download <code>Office_Attendance.xlsx</code> — one sheet per month with Sr. No., Date, In/Out times, Total Hours, and a 6.5h summary. Re-export any time for the latest data.</div>
       </div>
       <div class="help-row">
+        <div class="help-row-icon">📤</div>
+        <div class="help-row-body"><strong>Import Excel</strong>Tap <em>Import Excel</em> and pick a previously exported <code>.xlsx</code> file. All entries from that file are merged into the app — works on all devices including iPhone.</div>
+      </div>
+      <div class="help-row">
         <div class="help-row-icon">💾</div>
-        <div class="help-row-body"><strong>Auto-Save Excel</strong>(Chrome / Edge on desktop only) Tap <em>Auto-Save</em>, choose a save location, and the Excel file updates automatically every time you clock in or out.</div>
+        <div class="help-row-body"><strong>Auto-Save Excel</strong>(Chrome / Edge on desktop &amp; Android) Tap <em>Auto-Save</em>, choose a save location, and the Excel file updates automatically every time you clock in or out. <em>Not available on iOS Safari — use Import + Export manually instead.</em></div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>Excel as your database</h3>
+      <p>You can use an Excel file as the persistent record across sessions and devices:</p>
+      <div class="help-row">
+        <div class="help-row-icon">🍎</div>
+        <div class="help-row-body"><strong>iPhone (iOS)</strong>Import Excel → use app → Export Excel when done → next time, Import that file again to continue. Auto-Save not available.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">🤖</div>
+        <div class="help-row-body"><strong>Android / Desktop (Chrome, Edge)</strong>Import Excel once → tap Auto-Save and pick the same file → it updates automatically on every clock event.</div>
       </div>
     </div>
 
     <div class="help-section">
       <h3>Data &amp; Privacy</h3>
-      <p>All data is stored in your browser's <strong>local storage</strong> on this device only. Nothing is sent to any server. Clearing browser data will erase your logs — use <em>Export Excel</em> regularly as a backup. Switching to a different browser or device starts a fresh, empty app.</p>
+      <p>All data is stored in your browser's <strong>local storage</strong> on this device only. Nothing is sent to any server. Clearing browser data will erase your logs — use <em>Export Excel</em> regularly as a backup, and <em>Import Excel</em> to restore on a new device or browser.</p>
     </div>
 
     <div style="text-align:center;margin-top:8px">
@@ -1365,6 +1387,83 @@ if('showSaveFilePicker' in window){
 function openHelp(){document.getElementById('help-overlay').classList.add('show');}
 function closeHelp(){document.getElementById('help-overlay').classList.remove('show');}
 function bgCloseHelp(e){if(e.target===document.getElementById('help-overlay'))closeHelp();}
+
+// ── Import Excel ──
+function triggerExcelImport(){document.getElementById('excel-import-input').click();}
+
+function handleExcelImport(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      if(typeof XLSX==='undefined'){showToast('Excel library not loaded');return;}
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var imported=parseExcelToEntries(wb);
+      if(!imported.length){showToast('No data found in Excel file');return;}
+      var existing=loadData();
+      var merged=mergeEntries(existing,imported);
+      saveData(merged);
+      updateUI();
+      if(document.getElementById('tab-history').classList.contains('active'))renderHistory();
+      showToast(imported.length+' entries loaded from Excel');
+    }catch(err){
+      showToast('Could not read Excel file');
+    }
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseExcelToEntries(wb){
+  var monthMap={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+                Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  var entries=[];
+  wb.SheetNames.forEach(function(name){
+    var ws=wb.Sheets[name];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    var dataStart=-1;
+    for(var i=0;i<rows.length;i++){
+      if(String(rows[i][0]).trim()==='Sr. No.'){dataStart=i+1;break;}
+    }
+    if(dataStart===-1)return;
+    for(var r=dataStart;r<rows.length;r++){
+      var row=rows[r];
+      var sr=row[0];
+      var dateStr=String(row[1]||'').trim();
+      var inTime=String(row[2]||'').trim();
+      var outTime=String(row[3]||'').trim();
+      if(!dateStr||isNaN(Number(sr))||!inTime)continue;
+      var parts=dateStr.split(' ');
+      if(parts.length<3)continue;
+      var day=String(parts[0]).padStart(2,'0');
+      var mon=monthMap[parts[1]];
+      var yr=parts[2];
+      if(!mon)continue;
+      var dateKey=yr+'-'+mon+'-'+day;
+      var tsIn=new Date(dateKey+'T'+inTime+':00');
+      var tsOut=outTime?new Date(dateKey+'T'+outTime+':00'):null;
+      if(isNaN(tsIn.getTime()))continue;
+      entries.push({
+        date:dateKey,
+        in:tsIn.toISOString(),
+        out:(tsOut&&!isNaN(tsOut.getTime()))?tsOut.toISOString():null
+      });
+    }
+  });
+  return entries;
+}
+
+function mergeEntries(existing,imported){
+  var seen={};
+  existing.forEach(function(e){seen[e.in]=true;});
+  var merged=existing.slice();
+  imported.forEach(function(e){
+    if(!seen[e.in]){merged.push(e);seen[e.in]=true;}
+  });
+  merged.sort(function(a,b){return a.in<b.in?-1:a.in>b.in?1:0;});
+  return merged;
+}
 </script>
 </body>
 </html>

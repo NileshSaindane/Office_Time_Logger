@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Time Logger">
 <meta name="theme-color" content="#0a0a12">
+<link rel="manifest" href="manifest.json">
 <title>Office Time Logger</title>
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
@@ -1123,6 +1124,10 @@ function bgCloseName(e){if(e.target===document.getElementById('name-overlay'))cl
 
 applyName(loadName());
 startClock();updateUI();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js');
+}
 </script>
 </body>
 </html>

@@ -385,6 +385,41 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
 }
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
+/* ── Help sheet ── */
+.help-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:50%;border:none;
+  background:rgba(255,255,255,0.07);color:var(--text-2);
+  font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;
+  transition:all 0.2s;margin-left:8px;
+}
+.help-btn:active{opacity:0.7}
+.help-sheet{
+  background:var(--surface);
+  border-radius:28px 28px 0 0;
+  padding:12px 24px 48px;
+  width:100%;max-width:500px;
+  border-top:1px solid var(--border);
+  animation:slideUp 0.3s cubic-bezier(.4,0,.2,1);
+  max-height:88dvh;overflow-y:auto;
+}
+.help-section{margin-bottom:22px}
+.help-section h3{font-size:14px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.help-section p,.help-section li{font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:6px}
+.help-section ul{padding-left:16px}
+.help-section li{margin-bottom:4px}
+.help-section strong{color:var(--text)}
+.help-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
+.help-row:last-child{border-bottom:none}
+.help-row-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.help-row-body{flex:1;font-size:13px;color:var(--text-2);line-height:1.55}
+.help-row-body strong{color:var(--text);display:block;margin-bottom:2px}
+.help-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-right:4px;margin-bottom:3px}
+.ht-green{background:var(--in-dim);color:var(--in)}
+.ht-red  {background:var(--out-dim);color:var(--out)}
+.ht-blue {background:rgba(77,168,255,0.12);color:var(--blue)}
+.ht-purple{background:rgba(124,108,255,0.12);color:var(--purple)}
+
 /* ── Install banner ── */
 #install-banner{
   display:none;background:linear-gradient(135deg,rgba(124,108,255,0.15),rgba(77,168,255,0.1));
@@ -433,9 +468,12 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
     <h1>Office Tracker</h1>
     <div class="hd-date" id="hd-date">—</div>
   </div>
-  <div class="hd-avatar" id="hd-avatar" onclick="openNameEdit()">
-    <div class="hd-avatar-dot" id="hd-initial">N</div>
-    <span class="hd-avatar-name" id="hd-name">Nilesh</span>
+  <div style="display:flex;align-items:center;gap:0">
+    <div class="hd-avatar" id="hd-avatar" onclick="openNameEdit()">
+      <div class="hd-avatar-dot" id="hd-initial">N</div>
+      <span class="hd-avatar-name" id="hd-name">Nilesh</span>
+    </div>
+    <button class="help-btn" onclick="openHelp()" title="Help & Info">?</button>
   </div>
 </header>
 
@@ -617,6 +655,102 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
     <div class="btn-row" style="margin-top:0">
       <button class="btn-cancel" onclick="closeNameEdit()">Cancel</button>
       <button class="btn-primary btn-save" onclick="doNameSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help sheet -->
+<div class="overlay" id="help-overlay" onclick="bgCloseHelp(event)">
+  <div class="help-sheet">
+    <div class="sheet-handle"></div>
+    <h2 style="margin-bottom:4px">Help &amp; Info</h2>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:20px">Everything you need to use this app</p>
+
+    <div class="help-section">
+      <h3>What is this app?</h3>
+      <p>Office Time Logger tracks your daily work hours. It records every time you clock in and out, measures progress toward your <strong>6.5-hour daily goal</strong>, and exports your attendance as an Excel file. All data stays on this device — no account or internet needed.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>Install as an app</h3>
+      <div class="help-row">
+        <div class="help-row-icon">🤖</div>
+        <div class="help-row-body"><strong>Android (Chrome)</strong>Tap the menu (⋮) → <em>Add to Home Screen</em> or tap the Install icon in the address bar.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">🍎</div>
+        <div class="help-row-body"><strong>iPhone / iPad (Safari)</strong>Tap the Share button → <em>Add to Home Screen</em> → Add. The app opens full-screen like a native app.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">🖥️</div>
+        <div class="help-row-body"><strong>Windows (Chrome / Edge)</strong>Click the Install icon in the address bar, or menu → <em>Install app</em>. A shortcut appears in your Start menu.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>Today Tab</h3>
+      <div class="help-row">
+        <div class="help-row-icon">🕐</div>
+        <div class="help-row-body"><strong>Live Clock</strong>Shows the current time, day, and date — updates every second.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">⭕</div>
+        <div class="help-row-body"><strong>Progress Ring + Button</strong>The ring fills as you work toward 6.5 hours. Blue = in progress, green = goal reached. Tap the circle to clock in or out.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">📊</div>
+        <div class="help-row-body"><strong>Stats Cards</strong>Show total hours worked today and your percentage progress toward the 6.5-hour goal.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">📋</div>
+        <div class="help-row-body"><strong>Today's Sessions</strong>Lists every in/out pair recorded today. Multiple sessions (e.g. lunch break) are summed together.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">📅</div>
+        <div class="help-row-body"><strong>Recent Days</strong>Compact table of the last 14 days. Colour coded: <span class="help-tag ht-green">Done</span> = met 6.5h, <span class="help-tag ht-red">No</span> = under target, <span class="help-tag ht-blue">Open</span> = session not closed.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>History Tab</h3>
+      <p>Full log of every recorded day, grouped by month. Each month shows days attended, days meeting the 6.5h goal, and average daily hours. Each day card shows first in-time, last out-time, and total duration.</p>
+    </div>
+
+    <div class="help-section">
+      <h3>What you can do</h3>
+      <div class="help-row">
+        <div class="help-row-icon">▶</div>
+        <div class="help-row-body"><strong>Clock In / Out</strong>Tap the big circle. A sheet opens — the time is pre-filled to now. Adjust it if you arrived or left earlier, then confirm.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">➕</div>
+        <div class="help-row-body"><strong>Add a past entry</strong>Tap the <strong>+</strong> button (bottom-right) or <em>+ Add Entry</em> in the History tab. Pick any date, enter in and out times, and save.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">✏️</div>
+        <div class="help-row-body"><strong>Edit an entry</strong>In the History tab, tap <em>Edit</em> on any day card to correct an in or out time.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">👤</div>
+        <div class="help-row-body"><strong>Change your name</strong>Tap your name chip in the top-right corner, type a new name, and save.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">📥</div>
+        <div class="help-row-body"><strong>Export Excel</strong>Tap <em>Export Excel</em> to download <code>Office_Attendance.xlsx</code> — one sheet per month with Sr. No., Date, In/Out times, Total Hours, and a 6.5h summary. Re-export any time for the latest data.</div>
+      </div>
+      <div class="help-row">
+        <div class="help-row-icon">💾</div>
+        <div class="help-row-body"><strong>Auto-Save Excel</strong>(Chrome / Edge on desktop only) Tap <em>Auto-Save</em>, choose a save location, and the Excel file updates automatically every time you clock in or out.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>Data &amp; Privacy</h3>
+      <p>All data is stored in your browser's <strong>local storage</strong> on this device only. Nothing is sent to any server. Clearing browser data will erase your logs — use <em>Export Excel</em> regularly as a backup. Switching to a different browser or device starts a fresh, empty app.</p>
+    </div>
+
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn-cancel" style="max-width:200px;padding:12px 24px" onclick="closeHelp()">Close</button>
     </div>
   </div>
 </div>
@@ -1226,6 +1360,11 @@ if('showSaveFilePicker' in window){
   document.getElementById('autosave-btn').style.display='';
   getHandle().then(function(h){updateAutoSaveUI(!!h);});
 }
+
+// ── Help ──
+function openHelp(){document.getElementById('help-overlay').classList.add('show');}
+function closeHelp(){document.getElementById('help-overlay').classList.remove('show');}
+function bgCloseHelp(e){if(e.target===document.getElementById('help-overlay'))closeHelp();}
 </script>
 </body>
 </html>

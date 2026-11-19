@@ -503,7 +503,10 @@ main{flex:1;overflow-y:auto;padding:16px 20px 32px}
     <div class="log-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div class="log-card-title" style="margin-bottom:0">Recent Days</div>
-        <button class="export-btn" onclick="exportAllExcel()" id="export-all-btn">Export Excel</button>
+        <div style="display:flex;gap:6px">
+          <button class="export-btn" id="autosave-btn" onclick="setupAutoSave()" style="display:none">Auto-Save</button>
+          <button class="export-btn" onclick="exportAllExcel()" id="export-all-btn">Export Excel</button>
+        </div>
       </div>
       <div id="recent-days"><div class="log-empty">No history yet</div></div>
     </div>
@@ -818,6 +821,7 @@ function doConfirm(){
   }
   saveData(data);closeOverlay();updateUI();
   if(document.getElementById('tab-history').classList.contains('active'))renderHistory();
+  autoSaveExcel();
 }
 
 function closeOverlay(){document.getElementById('overlay').classList.remove('show');pendingAction=null;}
@@ -854,6 +858,7 @@ function doEditSave(){
   } else {entry.out=null;}
   saveData(data);showToast('Entry updated');closeEditOverlay();updateUI();
   if(document.getElementById('tab-history').classList.contains('active'))renderHistory();
+  autoSaveExcel();
 }
 
 function closeEditOverlay(){document.getElementById('edit-overlay').classList.remove('show');editTarget=null;}
@@ -889,6 +894,7 @@ function doManualSave(){
   closeManualOverlay();
   updateUI();
   if(document.getElementById('tab-history').classList.contains('active'))renderHistory();
+  autoSaveExcel();
 }
 
 function closeManualOverlay(){document.getElementById('manual-overlay').classList.remove('show');}
@@ -1127,6 +1133,98 @@ startClock();updateUI();
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js');
+}
+
+// ── Auto-Save Excel via File System Access API ──
+var IDB_NAME='tl_db', IDB_STORE='handles', IDB_KEY='excel_handle';
+
+function openDB(){
+  return new Promise(function(res,rej){
+    var r=indexedDB.open(IDB_NAME,1);
+    r.onupgradeneeded=function(e){e.target.result.createObjectStore(IDB_STORE);};
+    r.onsuccess=function(e){res(e.target.result);};
+    r.onerror=rej;
+  });
+}
+function getHandle(){
+  return openDB().then(function(db){
+    return new Promise(function(res,rej){
+      var r=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(IDB_KEY);
+      r.onsuccess=function(){res(r.result||null);};r.onerror=rej;
+    });
+  });
+}
+function setHandle(h){
+  return openDB().then(function(db){
+    return new Promise(function(res,rej){
+      var tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(h,IDB_KEY);
+      tx.oncomplete=res;tx.onerror=rej;
+    });
+  });
+}
+
+async function setupAutoSave(){
+  if(!('showSaveFilePicker' in window)){showToast('Auto-save not supported on this browser');return;}
+  try{
+    var h=await window.showSaveFilePicker({
+      suggestedName:'Office_Attendance.xlsx',
+      types:[{description:'Excel File',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]
+    });
+    await setHandle(h);
+    updateAutoSaveUI(true);
+    await writeExcelToHandle(h);
+    showToast('Auto-save ON — Excel will update on every clock event');
+  }catch(e){if(e.name!=='AbortError')showToast('Could not set up auto-save');}
+}
+
+async function autoSaveExcel(){
+  if(!('showSaveFilePicker' in window))return;
+  try{
+    var h=await getHandle();
+    if(!h)return;
+    var perm=await h.queryPermission({mode:'readwrite'});
+    if(perm!=='granted') perm=await h.requestPermission({mode:'readwrite'});
+    if(perm!=='granted')return;
+    await writeExcelToHandle(h);
+    showToast('Excel updated');
+  }catch(e){}
+}
+
+async function writeExcelToHandle(h){
+  if(typeof XLSX==='undefined')return;
+  var data=loadData();if(!data.length)return;
+  var byDate={};
+  data.forEach(function(e){(byDate[e.date]=byDate[e.date]||[]).push(e);});
+  var byMonth={};
+  Object.keys(byDate).sort().forEach(function(d){var mk=monthKey(d);(byMonth[mk]=byMonth[mk]||[]).push(d);});
+  var wb=XLSX.utils.book_new();
+  var mL=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  Object.keys(byMonth).sort().forEach(function(mk){
+    var rows=buildMonthSheet(byMonth[mk],byDate);
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:8},{wch:16},{wch:10},{wch:10},{wch:14},{wch:16}];
+    ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}}];
+    var p=mk.split('-');
+    XLSX.utils.book_append_sheet(wb,ws,mL[+p[1]-1]+' '+p[0]);
+  });
+  var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  var w=await h.createWritable();
+  await w.write(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  await w.close();
+}
+
+function updateAutoSaveUI(on){
+  var btn=document.getElementById('autosave-btn');if(!btn)return;
+  btn.textContent=on?'Auto-Save ON':'Auto-Save';
+  btn.style.color=on?'var(--in)':'';
+  btn.style.borderColor=on?'rgba(0,229,160,0.3)':'';
+}
+
+// Show auto-save button only if API is supported; restore state if handle already set
+if('showSaveFilePicker' in window){
+  document.getElementById('autosave-btn').style.display='';
+  getHandle().then(function(h){updateAutoSaveUI(!!h);});
 }
 </script>
 </body>
